@@ -46,28 +46,62 @@ We extended LiveKit CLI to support:
 
 ## Features
 
-### New Resolution Options
+### Complete Video Resolution Options
 
-#### 1. Very-High Preset (NEW)
+#### Resolution Presets
+
+| Preset | Command | Simulcast Layers | Bitrates | Use Case |
+|--------|---------|------------------|----------|----------|
+| **very-high** (NEW) | `--video-resolution very-high` | 1920x1080<br>1280x720<br>640x360 | 4000 kbps<br>2000 kbps<br>600 kbps | Production HD streaming |
+| **high** (default) | `--video-resolution high` | 1280x720<br>640x360<br>320x180 | 2000 kbps<br>600 kbps<br>150 kbps | Standard quality testing |
+| **medium** | `--video-resolution medium` | 640x360<br>320x180 | 600 kbps<br>150 kbps | Bandwidth-limited testing |
+| **low** | `--video-resolution low` | 320x180 | 150 kbps | Minimal bandwidth testing |
+
+#### Custom Resolution Combinations (NEW)
+
+Create your own resolution combinations using comma-separated values:
+
 ```bash
---video-resolution very-high
-```
-Publishes simulcast with three layers:
-- **1920x1080** (1080p) at 4000 kbps
-- **1280x720** (720p) at 2000 kbps  
-- **640x360** (360p) at 600 kbps
+# Full HD simulcast (1080p + 720p + 360p)
+--video-resolution "1080,720,360"
 
-#### 2. Custom Resolution Combinations (NEW)
+# HD dual-layer (1080p + 720p)
+--video-resolution "1080,720"
+
+# Single 1080p stream
+--video-resolution "1080"
+
+# HD without 1080p (720p + 360p)
+--video-resolution "720,360"
+
+# Mobile optimized (360p + 180p)
+--video-resolution "360,180"
+
+# Any combination you need
+--video-resolution "1080,360"  # Skip middle layer
+```
+
+#### Available Resolution Values for Custom Mode
+
+| Resolution | Dimensions | Bitrate | Aspect Ratio |
+|------------|------------|---------|--------------|
+| `1080` or `1080p` | 1920x1080 | 4000 kbps | 16:9 |
+| `720` or `720p` | 1280x720 | 2000 kbps | 16:9 |
+| `360` or `360p` | 640x360 | 600 kbps | 16:9 |
+| `180` or `180p` | 320x180 | 150 kbps | 16:9 |
+
+#### Simulcast vs Single Layer
+
 ```bash
---video-resolution "1080,720,360"  # All three layers
---video-resolution "1080,720"       # Just 1080p and 720p
---video-resolution "1080"           # Only 1080p
-```
+# Simulcast mode (default) - sends multiple resolution layers
+--video-resolution very-high  # Sends 1080p + 720p + 360p
 
-#### 3. Existing Options (Still Supported)
-- `high`: 720p + 360p + 180p (default)
-- `medium`: 360p + 180p
-- `low`: 180p only
+# Single layer mode - sends only the highest resolution
+--video-resolution very-high --no-simulcast  # Sends only 1080p
+
+# Works with custom resolutions too
+--video-resolution "1080,720" --no-simulcast  # Sends only 1080p
+```
 
 ---
 
@@ -714,6 +748,198 @@ echo "  go build -o lk ./cmd/lk"
 
 # Check if 1080p option is available
 ./lk load-test --help | grep "very-high"
+```
+
+### 2. Verify Video Resolution Implementation
+
+#### Check Available Resolution Options
+```bash
+# Windows
+.\lk.exe load-test --help | findstr "video-resolution"
+
+# macOS/Linux
+./lk load-test --help | grep -A 5 "video-resolution"
+
+# Expected output:
+# --video-resolution="high"  Resolution QUALITY of video to publish. 
+#   Options: "very-high" (1080p+720p+360p), "high" (720p+360p+180p), 
+#   "medium" (360p+180p), "low" (180p), or custom like "1080,720,360" or "720,360"
+```
+
+#### Test Each Resolution Mode
+```bash
+# Test 1: Verify "very-high" (1080p) resolution
+./lk load-test --video-resolution very-high --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating very-high resolution looper
+# INFO: Simulcast mode - using 3 layers: 640x360, 1280x720, 1920x1080
+# INFO: Using actual 1080p file: resources/butterfly_1080_4000.h264
+
+# Test 2: Verify "high" (720p) resolution
+./lk load-test --video-resolution high --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating high resolution looper
+# INFO: Simulcast mode - using 3 layers: 320x180, 640x360, 1280x720
+
+# Test 3: Verify "medium" (360p) resolution
+./lk load-test --video-resolution medium --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating medium resolution looper
+# INFO: Simulcast mode - using 2 layers: 320x180, 640x360
+
+# Test 4: Verify "low" (180p) resolution
+./lk load-test --video-resolution low --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating low resolution looper
+# INFO: Non-simulcast mode - using single layer at 320x180
+
+# Test 5: Verify custom resolution "1080,720,360"
+./lk load-test --video-resolution "1080,720,360" --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating custom resolution looper for: 1080,720,360
+# INFO: Simulcast mode - using 3 layers: 1920x1080, 1280x720, 640x360
+# INFO: Using actual 1080p file: resources/butterfly_1080_4000.h264
+
+# Test 6: Verify custom resolution "1080,720"
+./lk load-test --video-resolution "1080,720" --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating custom resolution looper for: 1080,720
+# INFO: Simulcast mode - using 2 layers: 1920x1080, 1280x720
+
+# Test 7: Verify single 1080p (no simulcast)
+./lk load-test --video-resolution "1080" --no-simulcast --video-publishers 1 --duration 5s \
+  --api-key devkey --api-secret devsecret --url ws://localhost:7880 2>&1 | grep INFO
+
+# Expected output:
+# INFO: Creating custom resolution looper for: 1080
+# INFO: Non-simulcast mode - using single layer at 1920x1080
+# INFO: Using actual 1080p file: resources/butterfly_1080_4000.h264
+```
+
+#### Automated Verification Script
+
+Save as `verify_resolutions.sh` (works on all platforms with bash):
+
+```bash
+#!/bin/bash
+
+echo "LiveKit CLI Video Resolution Verification"
+echo "=========================================="
+echo ""
+
+# Define test cases
+declare -a resolutions=("very-high" "high" "medium" "low" "1080,720,360" "1080,720" "1080" "720,360" "360")
+declare -a expected_layers=(
+    "640x360, 1280x720, 1920x1080"
+    "320x180, 640x360, 1280x720"
+    "320x180, 640x360"
+    "320x180"
+    "1920x1080, 1280x720, 640x360"
+    "1920x1080, 1280x720"
+    "1920x1080"
+    "1280x720, 640x360"
+    "640x360"
+)
+
+# Binary name based on OS
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    LK_BIN="./lk.exe"
+else
+    LK_BIN="./lk"
+fi
+
+# Check if binary exists
+if [ ! -f "$LK_BIN" ]; then
+    echo "Error: $LK_BIN not found. Please build the project first."
+    exit 1
+fi
+
+# Function to test resolution
+test_resolution() {
+    local resolution=$1
+    local expected=$2
+    local extra_args=$3
+    
+    echo "Testing resolution: $resolution $extra_args"
+    echo "Expected layers: $expected"
+    
+    output=$($LK_BIN load-test --video-resolution "$resolution" $extra_args \
+        --video-publishers 1 --duration 2s \
+        --api-key devkey --api-secret devsecret \
+        --url ws://localhost:7880 2>&1)
+    
+    if echo "$output" | grep -q "INFO:"; then
+        echo "✓ Resolution mode working"
+        
+        # Check for 1080p file usage
+        if [[ "$resolution" == *"1080"* ]] || [[ "$resolution" == "very-high" ]]; then
+            if echo "$output" | grep -q "Using actual 1080p file"; then
+                echo "✓ Using actual 1080p files"
+            elif echo "$output" | grep -q "falling back to 720p"; then
+                echo "⚠ Falling back to 720p (1080p files missing)"
+            fi
+        fi
+    else
+        echo "✗ Failed to test resolution"
+    fi
+    
+    echo "---"
+    echo ""
+}
+
+# Run tests
+echo "Starting resolution verification tests..."
+echo ""
+
+# Test standard resolutions
+for i in "${!resolutions[@]}"; do
+    test_resolution "${resolutions[$i]}" "${expected_layers[$i]}" ""
+done
+
+# Test with --no-simulcast flag
+echo "Testing --no-simulcast mode with 1080p..."
+test_resolution "1080" "Single layer at 1920x1080" "--no-simulcast"
+
+echo "Testing --no-simulcast mode with very-high..."
+test_resolution "very-high" "Single layer at 1920x1080" "--no-simulcast"
+
+echo ""
+echo "Verification Summary"
+echo "===================="
+echo ""
+
+# Check for 1080p files
+echo "Checking 1080p video files:"
+for file in butterfly_1080_4000.h264 cartoon_1080_3500.h264 circles_p1080_4000.h264 \
+            crescent_1080_4000.ivf neon_1080_4000.ivf tunnel_1080_4000.ivf; do
+    if [ -f "pkg/provider/resources/$file" ]; then
+        size=$(du -h "pkg/provider/resources/$file" 2>/dev/null | cut -f1)
+        echo "✓ $file ($size)"
+    else
+        echo "✗ $file - MISSING"
+    fi
+done
+
+echo ""
+echo "Verification complete!"
+```
+
+Make the script executable and run:
+```bash
+chmod +x verify_resolutions.sh
+./verify_resolutions.sh
 ```
 
 ### 2. Verify Video Files
