@@ -52,7 +52,7 @@ var (
 						},
 						&cli.StringFlag{
 							Name:  "video-resolution",
-							Usage: "Resolution `QUALITY` of video to publish (\"high\", \"medium\", or \"low\")",
+							Usage: "Resolution `QUALITY` of video to publish. Options: \"very-high\" (1080p+720p+360p), \"high\" (720p+360p+180p), \"medium\" (360p+180p), \"low\" (180p), or custom like \"1080,720,360\" or \"720,360\"",
 							Value: "high",
 						},
 						&cli.StringFlag{
@@ -145,7 +145,7 @@ var (
 				},
 				&cli.StringFlag{
 					Name:  "video-resolution",
-					Usage: "Resolution `QUALITY` of video to publish (\"high\", \"medium\", or \"low\")",
+					Usage: "Resolution `QUALITY` of video to publish. Options: \"very-high\" (1080p+720p+360p), \"high\" (720p+360p+180p), \"medium\" (360p+180p), \"low\" (180p), or custom like \"1080,720,360\" or \"720,360\"",
 					Value: "high",
 				},
 				&cli.StringFlag{

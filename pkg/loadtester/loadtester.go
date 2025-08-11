@@ -55,12 +55,14 @@ const (
 	// LayoutGrid5x5 - 25 participants at 256x144
 	LayoutGrid5x5 Layout = "5x5"
 
-	highWidth    = 1280
-	highHeight   = 720
-	mediumWidth  = 640
-	mediumHeight = 360
-	lowWidth     = 320
-	lowHeight    = 180
+	veryHighWidth  = 1920
+	veryHighHeight = 1080
+	highWidth      = 1280
+	highHeight     = 720
+	mediumWidth    = 640
+	mediumHeight   = 360
+	lowWidth       = 320
+	lowHeight      = 180
 )
 
 func LayoutFromString(str string) Layout {
