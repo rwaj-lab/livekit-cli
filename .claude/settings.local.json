@@ -26,7 +26,10 @@
       "Bash(cmd /c \"dir pkg\\provider\\resources\\*1080* /b\")",
       "Bash(\"C:\\Program Files\\Go\\bin\\go.exe\" build -o lk.exe ./cmd/lk)",
       "Bash(.\\lk.exe:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(.lk.exe --help)",
+      "Bash(./lk.exe --help)",
+      "Bash(./lk.exe:*)"
     ],
     "deny": []
   }

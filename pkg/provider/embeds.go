@@ -198,6 +198,26 @@ func randomVideoSpecsForCodec(videoCodec string) []*videoSpec {
 			filtered = append(filtered, specs)
 		}
 	}
+	
+	// Handle unsupported codecs - VP9 uses VP8 files (same container format)
+	if len(filtered) == 0 && videoCodec == "vp9" {
+		// VP9 can use VP8 IVF files, so fallback to VP8 specs
+		for _, specs := range videoSpecs {
+			if specs[0].codec == vp8Codec {
+				filtered = append(filtered, specs)
+			}
+		}
+		if len(filtered) > 0 {
+			fmt.Printf("INFO: VP9 codec requested, using VP8 test files (IVF format compatible)\n")
+		}
+	}
+	
+	if len(filtered) == 0 {
+		// If still no matches, return a default H264 spec set
+		fmt.Printf("WARNING: No video specs found for codec '%s', falling back to H264\n", videoCodec)
+		return videoSpecs[0]
+	}
+	
 	chosen := int(videoIndex.Inc()) % len(filtered)
 	return filtered[chosen]
 }
