@@ -30,7 +30,8 @@
       "Bash(.lk.exe --help)",
       "Bash(./lk.exe --help)",
       "Bash(./lk.exe:*)",
-      "Bash(go run:*)"
+      "Bash(go run:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
