@@ -29,6 +29,7 @@ import (
 const (
 	h264Codec = "h264"
 	vp8Codec  = "vp8"
+	vp9Codec  = "vp9"
 )
 
 type videoSpec struct {
@@ -42,7 +43,7 @@ type videoSpec struct {
 
 func (v *videoSpec) Name() string {
 	ext := "h264"
-	if v.codec == vp8Codec {
+	if v.codec == vp8Codec || v.codec == vp9Codec {
 		ext = "ivf"
 	}
 	
@@ -173,6 +174,7 @@ func init() {
 		createSpecsWithHD("crescent", vp8Codec, 150, 600, 2000, 4000),
 		createSpecsWithHD("neon", vp8Codec, 150, 600, 2000, 4000),
 		createSpecsWithHD("tunnel", vp8Codec, 150, 600, 2000, 4000),
+		createSpecsWithHD("gradient", vp9Codec, 150, 600, 2000, 4000),
 		{
 			circlesSpec(180, 200, 15),
 			circlesSpec(360, 700, 20),
@@ -199,21 +201,8 @@ func randomVideoSpecsForCodec(videoCodec string) []*videoSpec {
 		}
 	}
 	
-	// Handle unsupported codecs - VP9 uses VP8 files (same container format)
-	if len(filtered) == 0 && videoCodec == "vp9" {
-		// VP9 can use VP8 IVF files, so fallback to VP8 specs
-		for _, specs := range videoSpecs {
-			if specs[0].codec == vp8Codec {
-				filtered = append(filtered, specs)
-			}
-		}
-		if len(filtered) > 0 {
-			fmt.Printf("INFO: VP9 codec requested, using VP8 test files (IVF format compatible)\n")
-		}
-	}
-	
 	if len(filtered) == 0 {
-		// If still no matches, return a default H264 spec set
+		// If no matches, return a default H264 spec set
 		fmt.Printf("WARNING: No video specs found for codec '%s', falling back to H264\n", videoCodec)
 		return videoSpecs[0]
 	}
@@ -262,6 +251,12 @@ func CreateVideoLoopers(resolution string, codecFilter string, simulcast bool) (
 			loopers = append(loopers, looper)
 		} else if spec.codec == vp8Codec {
 			looper, err := NewVP8VideoLooper(f, spec)
+			if err != nil {
+				return nil, err
+			}
+			loopers = append(loopers, looper)
+		} else if spec.codec == vp9Codec {
+			looper, err := NewVP9VideoLooper(f, spec)
 			if err != nil {
 				return nil, err
 			}

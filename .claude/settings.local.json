@@ -29,7 +29,8 @@
       "Bash(cmd /c:*)",
       "Bash(.lk.exe --help)",
       "Bash(./lk.exe --help)",
-      "Bash(./lk.exe:*)"
+      "Bash(./lk.exe:*)",
+      "Bash(go run:*)"
     ],
     "deny": []
   }
